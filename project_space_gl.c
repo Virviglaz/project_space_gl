@@ -11,6 +11,10 @@ struct {
 	 uint fefresh_mills;
 } settings = { .fefresh_mills = 10, };
 
+struct color_t {
+	uint8_t r,g,b;
+};
+
 pthread_mutex_t mutex;
 
 static void update_screen_size(int width, int height)
@@ -20,13 +24,23 @@ static void update_screen_size(int width, int height)
 	 
 }
 
+static struct color_t *convert_color(uint32_t color)
+{
+	static struct color_t c;
+	c.r = color >> 16;
+	c.g = color >> 8;
+	c.b = color;
+	return &c;
+}
+
 static int draw_sphere(void *object)
 {
 	struct sphere *sphere = object;
-	glColor3f(sphere->color.r, sphere->color.g, sphere->color.b);
+	struct color_t *c = convert_color(sphere->color);
+	//printf("Drawing sphere: %s\tColor = %u, %u, %u: %06X\n", sphere->name, c->r, c->g, c->b, sphere->color);
+	glColor3f(c->r, c->g, c->b);
 	glTranslatef(sphere->x, sphere->y, sphere->z);
-	glutSolidSphere(sphere->radius, 20, 20);
-	printf("Drawing objects %p, %s\n", sphere, sphere->name);
+	glutSolidSphere(sphere->radius, 50, 20);
 	return 0;
 }
 
@@ -60,11 +74,9 @@ static void display()
 	if (!object) return;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glMatrixMode(GL_MODELVIEW);
-	
-	//pthread_mutex_lock(&mutex);
-	//printf("Drawing objects started\n");
-	while (object)
+	glLoadIdentity();
+
+	while (object->next)
 	{
 		res = draw_object(object->type, object->object);
 		

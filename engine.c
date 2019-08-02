@@ -28,28 +28,29 @@ static int add_object(enum object_type type, void *object)
 	}
 	new_object = objects;
 
+	/* Go to last object in list */
 	while(new_object->next)
 		new_object = new_object->next;
+
+	new_object->type = type;
+	new_object->object = object;
+	new_object->num = ++num;
+	new_object->next = NULL;
 
 	new_object->next = malloc(sizeof(struct object_list));	
 	if (!new_object->next) {
 		res = -ENOMEM;
 		goto err;
 	}
-	
-	new_object = new_object == objects ? new_object : new_object->next;
-	new_object->type = type;
-	new_object->object = object;
-	new_object->num = ++num;
+	new_object = new_object->next;
 	new_object->next = NULL;
-
 err:
 	//pthread_mutex_unlock(mutex);
 	return res;
 }
 
 static int add_sphere(float x, float y, float z, float r,
-	const char *name)
+	const char *name, uint32_t color)
 {
 	struct sphere *sphere = malloc(sizeof(struct sphere));
 	if (!sphere)
@@ -58,6 +59,7 @@ static int add_sphere(float x, float y, float z, float r,
 	sphere->x = x;
 	sphere->y = y;
 	sphere->z = z;
+	sphere->color = color;
 	sphere->radius = r;
 	sphere->name = name;
 	return add_object(SPHERE, sphere);
@@ -70,7 +72,8 @@ static void *engine_thread(void *params)
 	//pthread_mutex_lock(mutex);
 	//pthread_mutex_unlock(mutex);
 	//printf("Started %d!\n", __LINE__);
-	add_sphere(0.5,0.5,0.5,0.5, "Lunar");
+	add_sphere(0.5,0.5,0.5,0.7, "Lunar1", RED);
+	add_sphere(0.1,0.1,0.1,0.5, "Lunar2", GREEN);
 }
 
 pthread_t engine_start(pthread_mutex_t *mutex)
