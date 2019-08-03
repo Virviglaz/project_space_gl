@@ -39,8 +39,10 @@ static int draw_sphere(void *object)
 	struct color_t *c = convert_color(sphere->color);
 	//printf("Drawing sphere: %s\tColor = %u, %u, %u: %06X\n", sphere->name, c->r, c->g, c->b, sphere->color);
 	glColor3f(c->r, c->g, c->b);
+	glPushMatrix();
 	glTranslatef(sphere->x, sphere->y, sphere->z);
 	glutSolidSphere(sphere->radius, 50, 20);
+	glPopMatrix();
 	return 0;
 }
 

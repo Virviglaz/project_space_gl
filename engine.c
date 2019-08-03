@@ -73,7 +73,7 @@ static void *engine_thread(void *params)
 	//pthread_mutex_unlock(mutex);
 	//printf("Started %d!\n", __LINE__);
 	add_sphere(0.5,0.5,0.5,0.7, "Lunar1", RED);
-	add_sphere(0.1,0.1,0.1,0.5, "Lunar2", GREEN);
+	add_sphere(-0.5,-0.5,0.5,0.3, "Lunar2", GREEN);
 }
 
 pthread_t engine_start(pthread_mutex_t *mutex)
