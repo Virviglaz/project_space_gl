@@ -22,11 +22,22 @@ enum object_type {
 #define TEAL	0x008080
 #define NAVY	0x000080
 
+struct physic {
+	struct {
+		float x,y,z;
+	} speed;
+	struct {
+		float x,y,z;
+	} accel;
+	float weight;
+};
+
 struct sphere {
 	float x,y,z;
 	float radius;
 	const char *name;
 	uint32_t color;
+	struct physic physic;
 };
 
 struct object_list {

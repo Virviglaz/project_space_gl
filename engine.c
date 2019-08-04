@@ -7,14 +7,14 @@
 
 static pthread_t thandle;
 static struct object_list *objects = NULL;
-pthread_mutex_t *mutex;
+extern pthread_mutex_t mutex;
 
 static int add_object(enum object_type type, void *object)
 {
 	int res = 0;
 	static uint num = 0;
 	struct object_list *new_object;
-	//pthread_mutex_lock(mutex);
+	pthread_mutex_lock(&mutex);
 
 	if (!objects) { /* Create first element */
 		objects = malloc(sizeof(struct object_list));
@@ -45,7 +45,7 @@ static int add_object(enum object_type type, void *object)
 	new_object = new_object->next;
 	new_object->next = NULL;
 err:
-	//pthread_mutex_unlock(mutex);
+	pthread_mutex_unlock(&mutex);
 	return res;
 }
 
@@ -65,15 +65,28 @@ static int add_sphere(float x, float y, float z, float r,
 	return add_object(SPHERE, sphere);
 }
 
+static int remove_object(uint num)
+{
+	struct object_list *del_object = objects;
+	struct object_list *pre_object;
+
+	if (!del_object)
+		return -EINVAL;
+	
+	while(del_object) {
+		if (del_object->num == num)
+			break;
+		del_object = del_object->next;
+	}
+
+	if (!del_object)
+		return -ENODATA;
+}
+
 static void *engine_thread(void *params)
 {
-	mutex = (pthread_mutex_t *)params;
-	//printf("Started %d!\n", __LINE__);
-	//pthread_mutex_lock(mutex);
-	//pthread_mutex_unlock(mutex);
-	//printf("Started %d!\n", __LINE__);
 	add_sphere(0.5,0.5,0.5,0.7, "Lunar1", RED);
-	add_sphere(-0.5,-0.5,0.5,0.3, "Lunar2", GREEN);
+	add_sphere(-0.5,-0.5,0,0.3, "Lunar2", GREEN);
 }
 
 pthread_t engine_start(pthread_mutex_t *mutex)

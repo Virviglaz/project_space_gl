@@ -77,14 +77,14 @@ static void display()
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-
+	pthread_mutex_lock(&mutex);
 	while (object->next)
 	{
 		res = draw_object(object->type, object->object);
 		
 		object = object->next;
 	}
-	//pthread_mutex_unlock(&mutex);
+	pthread_mutex_unlock(&mutex);
 	if (res)
 		printf("Error: %d\n", res);
 
