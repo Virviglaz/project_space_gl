@@ -1,13 +1,12 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <errno.h>
-#include <pthread.h>
 #include "project_space_gl.h"
+#include <math.h>
+
+#define DBG	printf("Done: %u\n", __LINE__);
 
 static pthread_t thandle;
 static struct object_list *objects = NULL;
 extern pthread_mutex_t mutex;
+extern bool is_active;
 
 static int add_object(enum object_type type, void *object)
 {
@@ -56,9 +55,9 @@ static int add_sphere(float x, float y, float z, float r,
 	if (!sphere)
 		return -ENOMEM;
 
-	sphere->x = x;
-	sphere->y = y;
-	sphere->z = z;
+	sphere->physic.pos.x = x;
+	sphere->physic.pos.y = y;
+	sphere->physic.pos.z = z;
 	sphere->color = color;
 	sphere->radius = r;
 	sphere->name = name;
@@ -83,10 +82,59 @@ static int remove_object(uint num)
 		return -ENODATA;
 }
 
+static float distance2(struct physic *src, struct physic *dst)
+{
+	float dx = dst->pos.x - src->pos.x;
+	float dy = dst->pos.y - src->pos.y;
+	float dz = dst->pos.z - src->pos.z;
+
+	return dx * dx + dy * dy + dz * dz;
+}
+
+static int do_gravity_spheres(struct sphere *sp1, struct sphere *sp2)
+{
+	if (sp1 == sp2)
+		return 0;
+	printf("O1 = %s, O2 = %s, dist: %f\n", sp1->name, sp2->name, (distance2(&sp1->physic, &sp2->physic)));
+	return 0;
+}
+
+static int do_gravity(struct object_list *o1, struct object_list *o2)
+{
+	if (o1->type == SPHERE && o2->type == SPHERE)
+		return do_gravity_spheres(o1->object, o2->object);
+	return -EINVAL;
+}
+
+static int do_gravity_by_list(void)
+{
+	struct object_list *o1 = objects;
+	int res = -ENODATA;
+
+	while(o1->next) {
+		struct object_list *o2 = objects;
+		while(o2->next) {
+			res = do_gravity(o1, o2);
+			if (res)
+				return res;
+			o2 = o2->next;
+		}
+		o1 = o1->next;
+	}
+	return res;
+}
+
 static void *engine_thread(void *params)
 {
+	int res;
 	add_sphere(0.5,0.5,0.5,0.7, "Lunar1", RED);
 	add_sphere(-0.5,-0.5,0,0.3, "Lunar2", GREEN);
+	add_sphere(0.0,0.5,0,0.3, "Lunar3", BLUE);
+	add_sphere(0.0,0.0,0,0.3, "Lunar4", YELLOW);
+	DBG
+	while(is_active) {
+		res = do_gravity_by_list();
+	}
 }
 
 pthread_t engine_start(pthread_mutex_t *mutex)

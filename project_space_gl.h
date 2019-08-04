@@ -1,6 +1,13 @@
 #ifndef PROJECT_SPACE_GL
 #define PROJECT_SPACE_GL
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <errno.h>
+#include <pthread.h>
+
 enum object_type {
 	SPHERE,
 };
@@ -25,6 +32,9 @@ enum object_type {
 struct physic {
 	struct {
 		float x,y,z;
+	} pos;
+	struct {
+		float x,y,z;
 	} speed;
 	struct {
 		float x,y,z;
@@ -32,8 +42,7 @@ struct physic {
 	float weight;
 };
 
-struct sphere {
-	float x,y,z;
+struct sphere {	
 	float radius;
 	const char *name;
 	uint32_t color;

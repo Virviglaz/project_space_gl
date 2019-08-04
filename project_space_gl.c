@@ -1,9 +1,4 @@
 #include <GL/glut.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <errno.h>
-#include <pthread.h>
 #include "project_space_gl.h"
  
 struct {
@@ -16,6 +11,8 @@ struct color_t {
 };
 
 pthread_mutex_t mutex;
+pthread_t engine_thread_handle;
+bool is_active = true;
 
 static void update_screen_size(int width, int height)
 {
@@ -40,7 +37,7 @@ static int draw_sphere(void *object)
 	//printf("Drawing sphere: %s\tColor = %u, %u, %u: %06X\n", sphere->name, c->r, c->g, c->b, sphere->color);
 	glColor3f(c->r, c->g, c->b);
 	glPushMatrix();
-	glTranslatef(sphere->x, sphere->y, sphere->z);
+	glTranslatef(sphere->physic.pos.x, sphere->physic.pos.y, sphere->physic.pos.z);
 	glutSolidSphere(sphere->radius, 50, 20);
 	glPopMatrix();
 	return 0;
@@ -116,12 +113,12 @@ static void reshape(GLsizei width, GLsizei height)
 /* Main function: GLUT runs as a console application starting at main() */
 int main(int argc, char** argv)
 {
-	pthread_t engine_thread_handle;
 	if (pthread_mutex_init(&mutex, NULL)) {
 		printf("Mutex create error!\n");
 		goto err_mutex;
 	}
-	engine_thread_handle = engine_start(&mutex);
+
+	engine_thread_handle = engine_start(NULL);
 	glutInit(&argc, argv);            // Initialize GLUT
 	glutInitDisplayMode(GLUT_DOUBLE); // Enable double buffered mode
 	glutInitWindowSize(640, 480);   // Set the window's initial width & height
@@ -133,6 +130,7 @@ int main(int argc, char** argv)
 	glutTimerFunc(0, timer, 0);     // First timer call immediately [NEW]
 	glutMainLoop();                 // Enter the infinite event-processing loop
 err_mutex:
+	is_active = false;
 	pthread_cancel(engine_thread_handle);
 	pthread_mutex_destroy(&mutex);
 	return 0;
