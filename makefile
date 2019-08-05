@@ -9,4 +9,4 @@ engine.o: engine.c
 project_space_gl.o: project_space_gl.c
 	gcc -c -o project_space_gl.o project_space_gl.c
 ps: project_space_gl.o engine.o
-	gcc -o ps project_space_gl.o engine.o -lglut -lGLU -lGL -lpthread
+	gcc -o ps project_space_gl.o engine.o -lglut -lGLU -lGL -lpthread -lm

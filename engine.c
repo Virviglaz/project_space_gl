@@ -1,5 +1,6 @@
 #include "project_space_gl.h"
 #include <math.h>
+#include <unistd.h>
 
 #define DBG	printf("Done: %u\n", __LINE__);
 
@@ -7,6 +8,11 @@ static pthread_t thandle;
 static struct object_list *objects = NULL;
 extern pthread_mutex_t mutex;
 extern bool is_active;
+struct
+{
+	float G;
+} fconst = { .G = 0.0001f, };
+
 
 static int add_object(enum object_type type, void *object)
 {
@@ -48,8 +54,8 @@ err:
 	return res;
 }
 
-static int add_sphere(float x, float y, float z, float r,
-	const char *name, uint32_t color)
+static int add_sphere(float x, float y, float z, float r, 
+	float weight, const char *name, uint32_t color)
 {
 	struct sphere *sphere = malloc(sizeof(struct sphere));
 	if (!sphere)
@@ -61,6 +67,7 @@ static int add_sphere(float x, float y, float z, float r,
 	sphere->color = color;
 	sphere->radius = r;
 	sphere->name = name;
+	sphere->physic.weight = weight;
 	return add_object(SPHERE, sphere);
 }
 
@@ -91,18 +98,54 @@ static float distance2(struct physic *src, struct physic *dst)
 	return dx * dx + dy * dy + dz * dz;
 }
 
-static int do_gravity_spheres(struct sphere *sp1, struct sphere *sp2)
+static int do_impact_spheres(struct sphere *spere, struct sphere *reference)
 {
-	if (sp1 == sp2)
-		return 0;
-	printf("O1 = %s, O2 = %s, dist: %f\n", sp1->name, sp2->name, (distance2(&sp1->physic, &sp2->physic)));
+	printf("Impact! %s and %s\n", spere->name, reference->name);
 	return 0;
+}
+
+static int do_gravity_spheres(struct sphere *spere, struct sphere *reference)
+{
+	int res = 0;
+	float acc, distance;
+	if (spere == reference)
+		return 0;
+
+	distance = distance2(&spere->physic, &reference->physic);
+
+	acc = -fconst.G * spere->physic.weight / distance;
+	distance = sqrtf(distance);
+
+	/* Check impact condition */
+	if (distance < (spere->radius + reference->radius))
+		res = do_impact_spheres(spere, reference);
+
+	/* Gravity law */
+	spere->physic.accel.x += acc * 
+		(spere->physic.pos.x - reference->physic.pos.x) / distance;
+	spere->physic.accel.y += acc * 
+		(spere->physic.pos.y - reference->physic.pos.y) / distance;
+	spere->physic.accel.z += acc * 
+		(spere->physic.pos.z - reference->physic.pos.z) / distance;
+
+	/* Calculate velocity */
+	spere->physic.speed.x += spere->physic.accel.x;
+	spere->physic.speed.y += spere->physic.accel.y;
+	spere->physic.speed.z += spere->physic.accel.z;
+
+	/* Move object */
+	spere->physic.pos.x += spere->physic.speed.x;
+	spere->physic.pos.y += spere->physic.speed.y;
+	spere->physic.pos.z += spere->physic.speed.z;
+
+	return res;
 }
 
 static int do_gravity(struct object_list *o1, struct object_list *o2)
 {
 	if (o1->type == SPHERE && o2->type == SPHERE)
 		return do_gravity_spheres(o1->object, o2->object);
+
 	return -EINVAL;
 }
 
@@ -127,13 +170,14 @@ static int do_gravity_by_list(void)
 static void *engine_thread(void *params)
 {
 	int res;
-	add_sphere(0.5,0.5,0.5,0.7, "Lunar1", RED);
-	add_sphere(-0.5,-0.5,0,0.3, "Lunar2", GREEN);
-	add_sphere(0.0,0.5,0,0.3, "Lunar3", BLUE);
-	add_sphere(0.0,0.0,0,0.3, "Lunar4", YELLOW);
-	DBG
+	add_sphere(0.5,0.5,0.5,0.1, 0.10, "Lunar1", RED);
+	add_sphere(-0.5,-0.5,0,0.1, 0.10, "Lunar2", GREEN);
+	add_sphere(0.0,0.5,0,0.1, 0.10, "Lunar3", BLUE);
+	add_sphere(0.0,0.0,0,0.1, 0.10, "Lunar4", YELLOW);
+
 	while(is_active) {
 		res = do_gravity_by_list();
+		usleep(100000);
 	}
 }
 
