@@ -30,15 +30,17 @@ static struct color_t *convert_color(uint32_t color)
 	return &c;
 }
 
-static int draw_sphere(void *object)
+static int draw_sphere(void *draw_object)
 {
-	struct sphere *sphere = object;
+	struct object_list *object = draw_object;
+	struct sphere *sphere = object->object;
 	struct color_t *c = convert_color(sphere->color);
 	//printf("Drawing sphere: %s\tColor = %u, %u, %u: %06X\n", sphere->name, c->r, c->g, c->b, sphere->color);
+	//printf("%s\t\t%06f\t%06f\t%06f\n", sphere->name, object->physic->pos.x, object->physic->pos.y, object->physic->pos.z);
 	glColor3f(c->r, c->g, c->b);
 	glPushMatrix();
-	glTranslatef(sphere->physic.pos.x, sphere->physic.pos.y, sphere->physic.pos.z);
-	glutSolidSphere(sphere->radius, 50, 20);
+	glTranslatef(object->physic->pos.x, object->physic->pos.y, object->physic->pos.z);
+	glutSolidSphere(sphere->radius, sphere->slices, sphere->staks);
 	glPopMatrix();
 	return 0;
 }
@@ -70,21 +72,24 @@ static void display()
 {
 	struct object_list *object = get_object_list();
 	int res = 0;
-	if (!object) return;
+
+	if (!object)
+		return;
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
+	
 	pthread_mutex_lock(&mutex);
 	while (object->next)
 	{
-		res = draw_object(object->type, object->object);
-		
+		res = draw_object(object->type, object);
+		if (res)
+			printf("Error: %d\n", res);
+	
 		object = object->next;
 	}
 	pthread_mutex_unlock(&mutex);
-	if (res)
-		printf("Error: %d\n", res);
-
+	
 	glutSwapBuffers();
 }
  
@@ -121,8 +126,8 @@ int main(int argc, char** argv)
 	engine_thread_handle = engine_start(NULL);
 	glutInit(&argc, argv);            // Initialize GLUT
 	glutInitDisplayMode(GLUT_DOUBLE); // Enable double buffered mode
-	glutInitWindowSize(640, 480);   // Set the window's initial width & height
-	glutInitWindowPosition(50, 50); // Position the window's initial top-left corner
+	glutInitWindowSize(1280, 960);   // Set the window's initial width & height
+	glutInitWindowPosition(500, 250); // Position the window's initial top-left corner
 	glutCreateWindow("Space");          // Create window with the given title
 	glutDisplayFunc(display);       // Register callback handler for window re-paint event
 	glutReshapeFunc(reshape);       // Register callback handler for window re-size event

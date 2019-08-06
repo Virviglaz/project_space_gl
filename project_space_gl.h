@@ -5,10 +5,12 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 #include <errno.h>
 #include <pthread.h>
 
 enum object_type {
+	ALL,
 	SPHERE,
 };
 
@@ -44,19 +46,20 @@ struct physic {
 
 struct sphere {	
 	float radius;
+	uint32_t slices, staks;
 	const char *name;
 	uint32_t color;
-	struct physic physic;
 };
 
 struct object_list {
 	enum object_type type;
-	void *object;
 	uint num;
+	void *object;
+	struct physic *physic;
 	struct object_list *next;
 };
 
-pthread_t engine_start(pthread_mutex_t *mutex);
+pthread_t engine_start(pthread_mutex_t *ext_mutex);
 struct object_list *get_object_list(void);
 
 #endif
