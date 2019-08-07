@@ -47,7 +47,7 @@ struct physic {
 struct sphere {	
 	float radius;
 	uint32_t slices, staks;
-	const char *name;
+	char *name;
 	uint32_t color;
 };
 

@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #define DBG	printf("Done: %u\n", __LINE__);
+#define MAX_NAME_SIZE	50
 
 static pthread_t thandle;
 static struct object_list *objects = NULL;
@@ -13,8 +14,10 @@ struct
 	float G;
 	float M;
 	uint32_t D;
-} fconst = { .G = 0.0001f, .M = 1000, .D = 20, };
+	uint32_t N;
+} fconst = { .G = 0.0001f, .M = 1000, .D = 20, .N = 0, };
 
+struct sphere default_sphere = { .radius = 30, .slices = 50, .staks = 20, };
 
 static int add_object_to_list(enum object_type type, void *object,
 	struct physic *physic)
@@ -62,11 +65,9 @@ static int add_sphere(float x, float y, float z,
 {
 	struct physic *phy = malloc(sizeof(struct physic));
 	struct sphere *sphere = malloc(sizeof(struct sphere));
+
 	if (!sphere)
 		return -ENOMEM;
-
-	//printf("Adding object %s x=%.3f, y=%.3f, z=%.3f, vx=%.3f, vy=%.3f, vz=%.3f\n",
-	//name, x, y, z, vx, vy, vz);
 
 	phy->pos.x = x / fconst.M;
 	phy->pos.y = y / fconst.M;
@@ -76,9 +77,10 @@ static int add_sphere(float x, float y, float z,
 	phy->speed.z = vz / fconst.M;
 	sphere->color = color;
 	sphere->radius = radius / fconst.M;
-	sphere->name = name;
-	sphere->slices = 50;
-	sphere->staks = 20;
+	sphere->name = malloc(MAX_NAME_SIZE);
+	strcpy(sphere->name, name);
+	sphere->slices = default_sphere.slices;
+	sphere->staks = default_sphere.staks;
 	phy->weight = weight / fconst.M;
 	return add_object_to_list(SPHERE, sphere, phy);
 }
@@ -93,24 +95,56 @@ static struct object_list *find_object(void *object)
 	return NULL;
 }
 
+static int get_object_num(struct object_list *object)
+{
+	int num = 0;
+	struct object_list *listobject = objects;
+
+	if (!objects || !object)
+		return -EINVAL;
+
+	while(listobject->next) {
+		if (listobject == object)
+			return num;
+		num++;
+		listobject = listobject->next;
+	}
+
+	return -ENODATA;	
+}
+
 static int remove_object(struct object_list *object)
 {
 	struct object_list *del_object = objects;
 	struct object_list *pre_object;
+	struct sphere *sphere;
 
-	if (!object)
-		return -EINVAL;
-	
-	while(del_object->next) {
-		pre_object = del_object;
-		del_object = del_object->next;
-		if (del_object == object) {
-			free(del_object->object);
-			pre_object->next = del_object->next;
-			return 0;
+	/* Delete first one */
+	if (objects == object) {
+		objects = objects->next;
+
+	/* Find object */
+	} else {
+		while (del_object->next) {
+			pre_object = del_object;
+			del_object = del_object->next;
+			if (del_object == object)
+				break;
 		}
+		pre_object->next = del_object->next;
 	}
-	return -ENODATA;
+
+	switch (del_object->type) {
+	case SPHERE:
+		sphere = del_object->object;
+		free(sphere->name);
+		break;
+	}
+
+	free(del_object->physic);
+	free(del_object->object);
+
+	return 0;
 }
 
 static int get_nof_objects(enum object_type type)
@@ -133,18 +167,57 @@ static float distance2(struct physic *src, struct physic *dst)
 	return dx * dx + dy * dy + dz * dz;
 }
 
-static int do_impact_spheres(struct sphere *sphere, struct sphere *reference)
+static int do_impact_spheres(struct object_list *object1, struct object_list *object2, float distance)
 {
-	int res;
-	struct object_list *o_sphere = find_object(sphere);
-	struct object_list *o_reference = find_object(sphere);
-	printf("Impact! %s and %s\n", sphere->name, reference->name);
-	res = remove_object(o_sphere);
-	if (res)
-		return res;
-	res = remove_object(o_reference);
+	struct sphere *sp1 = object1->object;
+	struct sphere *sp2 = object2->object;
+	struct object_list *new_object;
 
-	return res;
+	struct physic *phy;
+	struct sphere *sphere;
+
+	if (sp1->radius + sp2->radius < distance)
+		return 0; /* No impact, objects far */
+
+	phy = malloc(sizeof(struct physic));
+	sphere = malloc(sizeof(struct sphere));
+	sphere->name = malloc(MAX_NAME_SIZE);
+	sphere->color = WHITE;
+	snprintf(sphere->name, MAX_NAME_SIZE - 1, "%s+%s", sp1->name, sp2->name);
+	sphere->slices = default_sphere.slices;
+	sphere->staks = default_sphere.staks;
+
+	/* Just take the largest one */
+	sphere->radius = sp1->radius > sp2->radius ? sp1->radius : sp2->radius;
+
+	/* Calculate new positions */
+	phy->pos.x = (object1->physic->pos.x + object2->physic->pos.x) / 2;
+	phy->pos.y = (object1->physic->pos.y + object2->physic->pos.y) / 2;
+	phy->pos.z = (object1->physic->pos.z + object2->physic->pos.z) / 2;
+
+	/* Save pulses summary law */
+	phy->weight = object1->physic->weight + object2->physic->weight;
+	phy->speed.x = (object1->physic->weight * object1->physic->speed.x +
+		object2->physic->weight * object2->physic->speed.x) / phy->weight;
+	phy->speed.y = (object1->physic->weight * object1->physic->speed.y +
+		object2->physic->weight * object2->physic->speed.y) / phy->weight;
+	phy->speed.z = (object1->physic->weight * object1->physic->speed.z +
+		object2->physic->weight * object2->physic->speed.z) / phy->weight;
+
+	add_object_to_list(SPHERE, sphere, phy);
+
+	remove_object(object1);
+	remove_object(object2);
+
+	return 1;
+}
+
+static int check_impact(struct object_list *object1, struct object_list *object2, float distance)
+{
+	if (object1->type == SPHERE && object2->type == SPHERE)
+		return do_impact_spheres(object1, object2, distance);
+	
+	return 0;
 }
 
 static int do_gravity(struct object_list *object, struct object_list *reference)
@@ -164,8 +237,9 @@ static int do_gravity(struct object_list *object, struct object_list *reference)
 	distance = sqrtf(distance);
 
 	/* Check impact condition */
-	//if (distance < (object->radius + reference->radius))
-		//res = do_impact_spheres(object, reference);
+	if (check_impact(object, reference, distance))
+		return res;
+
 	/* Calculate acceleration */
 	object->physic->accel.x += acc *
 		(object->physic->pos.x - reference->physic->pos.x) / distance;
@@ -245,7 +319,7 @@ static void *engine_thread(void *params)
 	int res = 0;
 	add_sphere(0,300,0,	-10,0,0,	50, 1000, "Lunar1", RED);
 	add_sphere(0,-300,0,	10,0,0,		50, 1000, "Lunar2", GREEN);
-	//add_sphere(300,0,0,	0,-10,0,	30, 1000, "Lunar3", YELLOW);
+	add_sphere(0,0,0,	0,0.1,0,		30, 100, "Lunar3", YELLOW);
 	//add_sphere(-300,0,0,	0,0,0,		30, 1000, "Lunar4", BLUE);
 	//add_sphere(0.3,0, -0.005,0,0, 0,0.01, 0.1, "Lunar3", BLUE);
 	//add_sphere(-0.3,0,0, 0.005,0,0, 0.01, 0.1, "Lunar4", YELLOW);
