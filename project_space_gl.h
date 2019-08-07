@@ -61,5 +61,6 @@ struct object_list {
 
 pthread_t engine_start(pthread_mutex_t *ext_mutex);
 struct object_list *get_object_list(void);
+struct physic *get_screen_center(void);
 
 #endif

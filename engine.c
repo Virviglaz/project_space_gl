@@ -9,6 +9,7 @@ static pthread_t thandle;
 static struct object_list *objects = NULL;
 extern pthread_mutex_t mutex;
 extern bool is_active;
+struct physic screen_center;
 struct
 {
 	float G;
@@ -314,12 +315,43 @@ static int do_movement_by_list(void)
 	return res;
 }
 
+static struct physic *mass_center(void)
+{
+	static struct physic center;
+	struct object_list *object = objects;
+
+	center.pos.x = 0;
+	center.pos.y = 0;
+	center.pos.z = 0;
+	center.weight = 0;
+
+	while (object->next) {
+		center.pos.x += object->physic->pos.x * object->physic->weight;
+		center.pos.y += object->physic->pos.y * object->physic->weight;
+		center.pos.z += object->physic->pos.z * object->physic->weight;
+		center.weight += object->physic->weight;
+		object = object->next;
+	}
+
+	center.pos.x /= center.weight;
+	center.pos.y /= center.weight;
+	center.pos.z /= center.weight;
+
+	screen_center.pos.x = center.pos.x;
+	screen_center.pos.x = center.pos.y;
+	screen_center.pos.x = center.pos.z;
+	printf("Center: %f, %f, %f\n", center.pos.x, center.pos.y, center.pos.z);
+
+	return &center;
+}
+
 static void *engine_thread(void *params)
 {
 	int res = 0;
-	add_sphere(0,300,0,	-10,0,0,	50, 1000, "Lunar1", RED);
-	add_sphere(0,-300,0,	10,0,0,		50, 1000, "Lunar2", GREEN);
-	add_sphere(0,0,0,	0,0.1,0,		30, 100, "Lunar3", YELLOW);
+
+	add_sphere(0,0,0,	10,0,0,		70, 1000, "Sun", RED);
+	//add_sphere(0,-300,0,	20,0,0,		30, 100, "Earth", GREEN);
+	//add_sphere(0,-500,0,	12,-2,0,	10, 10, "Lunar 1", YELLOW);
 	//add_sphere(-300,0,0,	0,0,0,		30, 1000, "Lunar4", BLUE);
 	//add_sphere(0.3,0, -0.005,0,0, 0,0.01, 0.1, "Lunar3", BLUE);
 	//add_sphere(-0.3,0,0, 0.005,0,0, 0.01, 0.1, "Lunar4", YELLOW);
@@ -339,6 +371,9 @@ static void *engine_thread(void *params)
 			printf("Error do_movement_by_list: %d\n", res);
 			is_active = false;
 		}
+
+		mass_center();
+
 		pthread_mutex_unlock(&mutex);
 	}
 }
@@ -348,6 +383,11 @@ pthread_t engine_start(pthread_mutex_t *ext_mutex)
 	if (pthread_create(&thandle, NULL, &engine_thread, ext_mutex))
 		printf("Error creating thread!\n");
 	return thandle;
+}
+
+struct physic *get_screen_center(void)
+{
+	return &screen_center;
 }
 
 struct object_list *get_object_list(void)

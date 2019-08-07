@@ -35,13 +35,18 @@ static int draw_sphere(void *draw_object)
 	struct object_list *object = draw_object;
 	struct sphere *sphere = object->object;
 	struct color_t *c = convert_color(sphere->color);
-	//printf("Drawing sphere: %s\tColor = %u, %u, %u: %06X\n", sphere->name, c->r, c->g, c->b, sphere->color);
-	//printf("%s\t\t%06f\t%06f\t%06f\n", sphere->name, object->physic->pos.x, object->physic->pos.y, object->physic->pos.z);
+	struct physic *screen_center = get_screen_center();
+
 	glColor3f(c->r, c->g, c->b);
 	glPushMatrix();
-	glTranslatef(object->physic->pos.x, object->physic->pos.y, object->physic->pos.z);
+	glTranslatef(
+		object->physic->pos.x - screen_center->pos.x,
+		object->physic->pos.y - screen_center->pos.y,
+		object->physic->pos.z - screen_center->pos.z);
+
 	glutSolidSphere(sphere->radius, sphere->slices, sphere->staks);
 	glPopMatrix();
+	//printf("Center: %f\n", screen_center->pos.x);
 	return 0;
 }
 
