@@ -9,7 +9,7 @@ static pthread_t thandle;
 static struct object_list *objects = NULL;
 extern pthread_mutex_t mutex;
 extern bool is_active;
-struct physic screen_center;
+extern double cx, cy, cz;
 struct
 {
 	double G;
@@ -185,6 +185,7 @@ static int do_impact_spheres(struct object_list *object1, struct object_list *ob
 	sphere->name = malloc(MAX_NAME_SIZE);
 	sphere->color = WHITE;
 	snprintf(sphere->name, MAX_NAME_SIZE - 1, "%s+%s", sp1->name, sp2->name);
+	printf("Impact %s and %s\n", sp1->name, sp2->name);
 	sphere->slices = default_sphere.slices;
 	sphere->staks = default_sphere.staks;
 
@@ -337,10 +338,9 @@ static struct physic *mass_center(void)
 	center.pos.y /= center.weight;
 	center.pos.z /= center.weight;
 
-	screen_center.pos.x = center.pos.x;
-	screen_center.pos.x = center.pos.y;
-	screen_center.pos.x = center.pos.z;
-	printf("Center: %f, %f, %f\n", center.pos.x, center.pos.y, center.pos.z);
+	cx = center.pos.x;
+	cy = center.pos.y;
+	cz = center.pos.z;
 
 	return &center;
 }
@@ -349,9 +349,9 @@ static void *engine_thread(void *params)
 {
 	int res = 0;
 
-	add_sphere(0,0,0,	10,0,0,		70, 1000, "Sun", RED);
-	//add_sphere(0,-300,0,	20,0,0,		30, 100, "Earth", GREEN);
-	//add_sphere(0,-500,0,	12,-2,0,	10, 10, "Lunar 1", YELLOW);
+	add_sphere(0,0,0,	0,0,0,		70, 1000, "Sun", RED);
+	add_sphere(0,800,100,	-8,0,0,	30, 100, "Earth", GREEN);
+	add_sphere(0,880,100,	-20,0,0,	10, 20, "Lunar 1", YELLOW);
 	//add_sphere(-300,0,0,	0,0,0,		30, 1000, "Lunar4", BLUE);
 	//add_sphere(0.3,0, -0.005,0,0, 0,0.01, 0.1, "Lunar3", BLUE);
 	//add_sphere(-0.3,0,0, 0.005,0,0, 0.01, 0.1, "Lunar4", YELLOW);
@@ -384,11 +384,6 @@ pthread_t engine_start(pthread_mutex_t *ext_mutex)
 	if (pthread_create(&thandle, NULL, &engine_thread, ext_mutex))
 		printf("Error creating thread!\n");
 	return thandle;
-}
-
-struct physic *get_screen_center(void)
-{
-	return &screen_center;
 }
 
 struct object_list *get_object_list(void)

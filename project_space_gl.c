@@ -12,13 +12,13 @@ struct color_t {
 
 pthread_mutex_t mutex;
 pthread_t engine_thread_handle;
+double cx, cy, cz;
 bool is_active = true;
 
 static void update_screen_size(int width, int height)
 {
 	settings.width = width;
-	settings.height = height;
-	 
+	settings.height = height;	 
 }
 
 static struct color_t *convert_color(uint32_t color)
@@ -35,18 +35,18 @@ static int draw_sphere(void *draw_object)
 	struct object_list *object = draw_object;
 	struct sphere *sphere = object->object;
 	struct color_t *c = convert_color(sphere->color);
-	struct physic *screen_center = get_screen_center();
 
 	glColor3d(c->r, c->g, c->b);
 	glPushMatrix();
+	//pthread_mutex_lock(&mutex);
 	glTranslated(
-		object->physic->pos.x - screen_center->pos.x,
-		object->physic->pos.y - screen_center->pos.y,
-		object->physic->pos.z - screen_center->pos.z);
+		object->physic->pos.x - cx,
+		object->physic->pos.y - cy,
+		object->physic->pos.z - cz);
 
 	glutSolidSphere(sphere->radius, sphere->slices, sphere->staks);
+	//pthread_mutex_unlock(&mutex);
 	glPopMatrix();
-	//printf("Center: %f\n", screen_center->pos.x);
 	return 0;
 }
 
