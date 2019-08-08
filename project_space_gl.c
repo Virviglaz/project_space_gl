@@ -37,9 +37,9 @@ static int draw_sphere(void *draw_object)
 	struct color_t *c = convert_color(sphere->color);
 	struct physic *screen_center = get_screen_center();
 
-	glColor3f(c->r, c->g, c->b);
+	glColor3d(c->r, c->g, c->b);
 	glPushMatrix();
-	glTranslatef(
+	glTranslated(
 		object->physic->pos.x - screen_center->pos.x,
 		object->physic->pos.y - screen_center->pos.y,
 		object->physic->pos.z - screen_center->pos.z);
@@ -108,7 +108,7 @@ static void reshape(GLsizei width, GLsizei height)
 {
 	// Compute aspect ratio of the new window
 	if (height == 0) height = 1;                // To prevent divide by 0
-	GLfloat aspect = (GLfloat)width / (GLfloat)height;
+	GLdouble aspect = (GLdouble)width / (GLdouble)height;
  
 	// Set the viewport to cover the new window
 	glViewport(0, 0, width, height);
@@ -142,6 +142,7 @@ int main(int argc, char** argv)
 err_mutex:
 	is_active = false;
 	pthread_cancel(engine_thread_handle);
-	pthread_mutex_destroy(&mutex);
+	//pthread_mutex_destroy(&mutex);
+	pthread_join(engine_thread_handle, NULL);
 	return 0;
 }

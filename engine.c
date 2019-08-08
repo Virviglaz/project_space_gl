@@ -12,8 +12,8 @@ extern bool is_active;
 struct physic screen_center;
 struct
 {
-	float G;
-	float M;
+	double G;
+	double M;
 	uint32_t D;
 	uint32_t N;
 } fconst = { .G = 0.0001f, .M = 1000, .D = 20, .N = 0, };
@@ -60,9 +60,9 @@ err:
 	return res;
 }
 
-static int add_sphere(float x, float y, float z,
-	float vx, float vy, float vz, float radius,
-	float weight, const char *name, uint32_t color)
+static int add_sphere(double x, double y, double z,
+	double vx, double vy, double vz, double radius,
+	double weight, const char *name, uint32_t color)
 {
 	struct physic *phy = malloc(sizeof(struct physic));
 	struct sphere *sphere = malloc(sizeof(struct sphere));
@@ -159,16 +159,16 @@ static int get_nof_objects(enum object_type type)
 	return i;
 }
 
-static float distance2(struct physic *src, struct physic *dst)
+static double distance2(struct physic *src, struct physic *dst)
 {
-	float dx = dst->pos.x - src->pos.x;
-	float dy = dst->pos.y - src->pos.y;
-	float dz = dst->pos.z - src->pos.z;
+	double dx = dst->pos.x - src->pos.x;
+	double dy = dst->pos.y - src->pos.y;
+	double dz = dst->pos.z - src->pos.z;
 
 	return dx * dx + dy * dy + dz * dz;
 }
 
-static int do_impact_spheres(struct object_list *object1, struct object_list *object2, float distance)
+static int do_impact_spheres(struct object_list *object1, struct object_list *object2, double distance)
 {
 	struct sphere *sp1 = object1->object;
 	struct sphere *sp2 = object2->object;
@@ -213,7 +213,7 @@ static int do_impact_spheres(struct object_list *object1, struct object_list *ob
 	return 1;
 }
 
-static int check_impact(struct object_list *object1, struct object_list *object2, float distance)
+static int check_impact(struct object_list *object1, struct object_list *object2, double distance)
 {
 	if (object1->type == SPHERE && object2->type == SPHERE)
 		return do_impact_spheres(object1, object2, distance);
@@ -224,7 +224,7 @@ static int check_impact(struct object_list *object1, struct object_list *object2
 static int do_gravity(struct object_list *object, struct object_list *reference)
 {
 	int res = 0;
-	float acc, distance;
+	double acc, distance;
 	if (object == reference)
 		return 0;
 
@@ -376,6 +376,7 @@ static void *engine_thread(void *params)
 
 		pthread_mutex_unlock(&mutex);
 	}
+	pthread_exit(NULL);
 }
 
 pthread_t engine_start(pthread_mutex_t *ext_mutex)

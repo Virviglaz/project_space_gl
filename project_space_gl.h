@@ -33,19 +33,19 @@ enum object_type {
 
 struct physic {
 	struct {
-		float x,y,z;
+		double x,y,z;
 	} pos;
 	struct {
-		float x,y,z;
+		double x,y,z;
 	} speed;
 	struct {
-		float x,y,z;
+		double x,y,z;
 	} accel;
-	float weight;
+	double weight;
 };
 
 struct sphere {	
-	float radius;
+	double radius;
 	uint32_t slices, staks;
 	char *name;
 	uint32_t color;
