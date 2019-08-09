@@ -349,9 +349,9 @@ static void *engine_thread(void *params)
 {
 	int res = 0;
 
-	add_sphere(0,0,0,	0,0,0,		70, 1000, "Sun", RED);
-	add_sphere(0,800,100,	-8,0,0,	30, 100, "Earth", GREEN);
-	add_sphere(0,880,100,	-20,0,0,	10, 20, "Lunar 1", YELLOW);
+	add_sphere(0,0,0,	0,0,0,		50, 1000, "Sun", RED);
+	add_sphere(0,800,100,	10,0,0,		30, 100, "Earth", GREEN);
+	add_sphere(0,880,100,	22,0,0,	10, 20, "Lunar 1", YELLOW);
 	//add_sphere(-300,0,0,	0,0,0,		30, 1000, "Lunar4", BLUE);
 	//add_sphere(0.3,0, -0.005,0,0, 0,0.01, 0.1, "Lunar3", BLUE);
 	//add_sphere(-0.3,0,0, 0.005,0,0, 0.01, 0.1, "Lunar4", YELLOW);
