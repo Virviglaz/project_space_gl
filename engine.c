@@ -1,5 +1,4 @@
 #include "project_space_gl.h"
-#include <math.h>
 #include <unistd.h>
 
 #define DBG	printf("Done: %u\n", __LINE__);

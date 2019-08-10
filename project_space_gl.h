@@ -8,6 +8,7 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <math.h>
 
 enum object_type {
 	ALL,

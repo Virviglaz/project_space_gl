@@ -15,6 +15,15 @@ pthread_t engine_thread_handle;
 double cx, cy, cz;
 bool is_active = true;
 
+struct {
+	/* Angle */
+	float angle;
+	/* View vector */
+	float lx, lz;
+	/* Position */
+	float x, z;
+} camera = { .angle = 0.0f, .lx=0.0f, .lz=-1.0f, .x=0.0f, .z=0.0f };
+
 static void update_screen_size(int width, int height)
 {
 	settings.width = width;
@@ -83,7 +92,11 @@ static void display()
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
-	
+
+	gluLookAt(   camera.x, 0.0f,     camera.z,
+		  camera.x + camera.lx, 1.0f,  camera.z + camera.lz,
+		  0.0f, 1.0f,  0.0f );
+
 	pthread_mutex_lock(&mutex);
 	while (object->next)
 	{
@@ -119,6 +132,31 @@ static void reshape(GLsizei width, GLsizei height)
 	// Enable perspective projection with fovy, aspect, zNear and zFar
 	gluPerspective(45.0f, aspect, 0.1f, 100.0f);
 }
+
+static void process_keys(int key, int xx, int yy)
+{
+	float fraction = 0.1f;
+	switch (key) {
+		case GLUT_KEY_LEFT :
+			camera.angle -= 0.01f;
+			camera.lx = sin(camera.angle);
+			camera.lz = -cos(camera.angle);
+			break;
+		case GLUT_KEY_RIGHT :
+			camera.angle += 0.01f;
+			camera.lx = sin(camera.angle);
+			camera.lz = -cos(camera.angle);
+			break;
+		case GLUT_KEY_UP :
+			camera.x += camera.lx * fraction;
+			camera.z += camera.lz * fraction;
+			break;
+		case GLUT_KEY_DOWN :
+			camera.x -= camera.lx * fraction;
+			camera.z -= camera.lz * fraction;
+			break;
+	}
+}
  
 /* Main function: GLUT runs as a console application starting at main() */
 int main(int argc, char** argv)
@@ -136,6 +174,7 @@ int main(int argc, char** argv)
 	glutCreateWindow("Space");          // Create window with the given title
 	glutDisplayFunc(display);       // Register callback handler for window re-paint event
 	glutReshapeFunc(reshape);       // Register callback handler for window re-size event
+	glutSpecialFunc(process_keys);
 	initGL();                       // Our own OpenGL initialization
 	glutTimerFunc(0, timer, 0);     // First timer call immediately [NEW]
 	glutMainLoop();                 // Enter the infinite event-processing loop
