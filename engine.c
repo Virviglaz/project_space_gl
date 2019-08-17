@@ -27,7 +27,7 @@ static int add_object_to_list(enum object_type type, void *object,
 	struct object_list *new_object;
 
 	if (!objects) { /* Create first element */
-		objects = malloc(sizeof(struct object_list));
+		objects = (struct object_list *)malloc(sizeof(struct object_list));
 		if (!object) {
 			res = -ENOMEM;
 			goto err;
@@ -48,7 +48,7 @@ static int add_object_to_list(enum object_type type, void *object,
 	new_object->next = NULL;
 	new_object->physic = physic;
 
-	new_object->next = malloc(sizeof(struct object_list));	
+	new_object->next = (struct object_list *)malloc(sizeof(struct object_list));
 	if (!new_object->next) {
 		res = -ENOMEM;
 		goto err;
@@ -63,8 +63,8 @@ static int add_sphere(double x, double y, double z,
 	double vx, double vy, double vz, double radius,
 	double weight, const char *name, uint32_t color)
 {
-	struct physic *phy = malloc(sizeof(struct physic));
-	struct sphere *sphere = malloc(sizeof(struct sphere));
+	struct physic *phy = (struct physic *)malloc(sizeof(struct physic));
+	struct sphere *sphere = (struct sphere *)malloc(sizeof(struct sphere));
 
 	if (!sphere)
 		return -ENOMEM;
@@ -77,7 +77,7 @@ static int add_sphere(double x, double y, double z,
 	phy->speed.z = vz / fconst.M;
 	sphere->color = color;
 	sphere->radius = radius / fconst.M;
-	sphere->name = malloc(MAX_NAME_SIZE);
+	sphere->name = (char *)malloc(MAX_NAME_SIZE);
 	strcpy(sphere->name, name);
 	sphere->slices = default_sphere.slices;
 	sphere->staks = default_sphere.staks;
@@ -136,7 +136,7 @@ static int remove_object(struct object_list *object)
 
 	switch (del_object->type) {
 	case SPHERE:
-		sphere = del_object->object;
+		sphere = (struct sphere *)del_object->object;
 		free(sphere->name);
 		break;
 	}
@@ -169,8 +169,8 @@ static double distance2(struct physic *src, struct physic *dst)
 
 static int do_impact_spheres(struct object_list *object1, struct object_list *object2, double distance)
 {
-	struct sphere *sp1 = object1->object;
-	struct sphere *sp2 = object2->object;
+	struct sphere *sp1 = (struct sphere *)object1->object;
+	struct sphere *sp2 = (struct sphere *)object2->object;
 	struct object_list *new_object;
 
 	struct physic *phy;
@@ -179,9 +179,9 @@ static int do_impact_spheres(struct object_list *object1, struct object_list *ob
 	if (sp1->radius + sp2->radius < distance)
 		return 0; /* No impact, objects far */
 
-	phy = malloc(sizeof(struct physic));
-	sphere = malloc(sizeof(struct sphere));
-	sphere->name = malloc(MAX_NAME_SIZE);
+	phy = (struct physic *)malloc(sizeof(struct physic));
+	sphere = (struct sphere *)malloc(sizeof(struct sphere));
+	sphere->name = (char *)malloc(MAX_NAME_SIZE);
 	sphere->color = WHITE;
 	snprintf(sphere->name, MAX_NAME_SIZE - 1, "%s+%s", sp1->name, sp2->name);
 	printf("Impact %s and %s\n", sp1->name, sp2->name);
@@ -275,7 +275,7 @@ static int do_gravity_by_list(void)
 
 	/* Reset all accelerations */
 	while(o1->next) {
-		struct sphere *p = o1->object;
+		struct sphere *p = (struct sphere *)o1->object;
 		o1->physic->accel.x = 0;
 		o1->physic->accel.y = 0;
 		o1->physic->accel.z = 0;

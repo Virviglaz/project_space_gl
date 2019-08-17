@@ -181,7 +181,6 @@ int main(int argc, char** argv)
 err_mutex:
 	is_active = false;
 	pthread_cancel(engine_thread_handle);
-	//pthread_mutex_destroy(&mutex);
 	pthread_join(engine_thread_handle, NULL);
 	return 0;
 }
