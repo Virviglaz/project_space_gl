@@ -1,19 +1,15 @@
 #include <GL/glut.h>
-#include "project_space_gl.h"
+#include "engine.h"
  
 struct {
 	 int width, height;
 	 uint fefresh_mills;
+	 struct physic *center;
 } settings = { .fefresh_mills = 10, };
 
 struct color_t {
 	uint8_t r,g,b;
 };
-
-pthread_mutex_t mutex;
-pthread_t engine_thread_handle;
-double cx, cy, cz;
-bool is_active = true;
 
 struct {
 	/* Angle */
@@ -47,14 +43,12 @@ static int draw_sphere(void *draw_object)
 
 	glColor3d(c->r, c->g, c->b);
 	glPushMatrix();
-	//pthread_mutex_lock(&mutex);
 	glTranslated(
-		object->physic->pos.x - cx,
-		object->physic->pos.y - cy,
-		object->physic->pos.z - cz);
+		object->physic->pos.x - settings.center->pos.x,
+		object->physic->pos.y - settings.center->pos.y,
+		object->physic->pos.z - settings.center->pos.z);
 
 	glutSolidSphere(sphere->radius, sphere->slices, sphere->staks);
-	//pthread_mutex_unlock(&mutex);
 	glPopMatrix();
 	return 0;
 }
@@ -84,8 +78,8 @@ static void initGL()
 
 static void display()
 {
-	struct object_list *object = get_object_list();
-	int res = 0;
+	struct object_list *object;
+	int res = do_space(&object, &settings.center);
 
 	if (!object)
 		return;
@@ -97,7 +91,6 @@ static void display()
 		  camera.x + camera.lx, 1.0f,  camera.z + camera.lz,
 		  0.0f, 1.0f,  0.0f );
 
-	pthread_mutex_lock(&mutex);
 	while (object->next)
 	{
 		res = draw_object(object->type, object);
@@ -106,7 +99,6 @@ static void display()
 	
 		object = object->next;
 	}
-	pthread_mutex_unlock(&mutex);
 	
 	glutSwapBuffers();
 }
@@ -161,12 +153,6 @@ static void process_keys(int key, int xx, int yy)
 /* Main function: GLUT runs as a console application starting at main() */
 int main(int argc, char** argv)
 {
-	if (pthread_mutex_init(&mutex, NULL)) {
-		printf("Mutex create error!\n");
-		goto err_mutex;
-	}
-
-	engine_thread_handle = engine_start(NULL);
 	glutInit(&argc, argv);            // Initialize GLUT
 	glutInitDisplayMode(GLUT_DOUBLE); // Enable double buffered mode
 	glutInitWindowSize(1280, 960);   // Set the window's initial width & height
@@ -178,9 +164,6 @@ int main(int argc, char** argv)
 	initGL();                       // Our own OpenGL initialization
 	glutTimerFunc(0, timer, 0);     // First timer call immediately [NEW]
 	glutMainLoop();                 // Enter the infinite event-processing loop
-err_mutex:
-	is_active = false;
-	pthread_cancel(engine_thread_handle);
-	pthread_join(engine_thread_handle, NULL);
+
 	return 0;
 }

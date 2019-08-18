@@ -1,23 +1,19 @@
-#include "project_space_gl.h"
-#include <unistd.h>
+#include "engine.h"
 
 #define DBG	printf("Done: %u\n", __LINE__);
 #define MAX_NAME_SIZE	50
 
-static pthread_t thandle;
 static struct object_list *objects = NULL;
-extern pthread_mutex_t mutex;
-extern bool is_active;
-extern double cx, cy, cz;
+
 struct
 {
 	double G;
 	double M;
 	uint32_t D;
 	uint32_t N;
-} fconst = { .G = 0.0001f, .M = 1000, .D = 20, .N = 0, };
+} fconst = { .G = 0.0001f,.M = 1000,.D = 20,.N = 0, };
 
-struct sphere default_sphere = { .radius = 30, .slices = 50, .staks = 20, };
+struct sphere default_sphere = { .radius = 30,.slices = 50,.staks = 20, };
 
 static int add_object_to_list(enum object_type type, void *object,
 	struct physic *physic)
@@ -39,7 +35,7 @@ static int add_object_to_list(enum object_type type, void *object,
 	new_object = objects;
 
 	/* Go to last object in list */
-	while(new_object->next)
+	while (new_object->next)
 		new_object = new_object->next;
 
 	new_object->type = type;
@@ -88,7 +84,7 @@ static int add_sphere(double x, double y, double z,
 static struct object_list *find_object(void *object)
 {
 	struct object_list *listobject = objects;
-	while(listobject->next)
+	while (listobject->next)
 		if (listobject->object == object)
 			return listobject;
 
@@ -103,14 +99,14 @@ static int get_object_num(struct object_list *object)
 	if (!objects || !object)
 		return -EINVAL;
 
-	while(listobject->next) {
+	while (listobject->next) {
 		if (listobject == object)
 			return num;
 		num++;
 		listobject = listobject->next;
 	}
 
-	return -ENODATA;	
+	return -ENODATA;
 }
 
 static int remove_object(struct object_list *object)
@@ -123,8 +119,9 @@ static int remove_object(struct object_list *object)
 	if (objects == object) {
 		objects = objects->next;
 
-	/* Find object */
-	} else {
+		/* Find object */
+	}
+	else {
 		while (del_object->next) {
 			pre_object = del_object;
 			del_object = del_object->next;
@@ -139,6 +136,8 @@ static int remove_object(struct object_list *object)
 		sphere = (struct sphere *)del_object->object;
 		free(sphere->name);
 		break;
+	default:
+		break;
 	}
 
 	free(del_object->physic);
@@ -152,7 +151,7 @@ static int get_nof_objects(enum object_type type)
 	int i = 0;
 	struct object_list *object = objects;
 
-	while(object->next)
+	while (object->next)
 		if (object->type == type || type == ALL)
 			i++;
 	return i;
@@ -171,7 +170,6 @@ static int do_impact_spheres(struct object_list *object1, struct object_list *ob
 {
 	struct sphere *sp1 = (struct sphere *)object1->object;
 	struct sphere *sp2 = (struct sphere *)object2->object;
-	struct object_list *new_object;
 
 	struct physic *phy;
 	struct sphere *sphere;
@@ -184,7 +182,7 @@ static int do_impact_spheres(struct object_list *object1, struct object_list *ob
 	sphere->name = (char *)malloc(MAX_NAME_SIZE);
 	sphere->color = WHITE;
 	snprintf(sphere->name, MAX_NAME_SIZE - 1, "%s+%s", sp1->name, sp2->name);
-	printf("Impact %s and %s\n", sp1->name, sp2->name);
+	//printf("Impact %s and %s\n", sp1->name, sp2->name);
 	sphere->slices = default_sphere.slices;
 	sphere->staks = default_sphere.staks;
 
@@ -217,7 +215,7 @@ static int check_impact(struct object_list *object1, struct object_list *object2
 {
 	if (object1->type == SPHERE && object2->type == SPHERE)
 		return do_impact_spheres(object1, object2, distance);
-	
+
 	return 0;
 }
 
@@ -274,8 +272,7 @@ static int do_gravity_by_list(void)
 	int res = -ENODATA;
 
 	/* Reset all accelerations */
-	while(o1->next) {
-		struct sphere *p = (struct sphere *)o1->object;
+	while (o1->next) {
 		o1->physic->accel.x = 0;
 		o1->physic->accel.y = 0;
 		o1->physic->accel.z = 0;
@@ -284,9 +281,9 @@ static int do_gravity_by_list(void)
 	o1 = objects;
 
 	/* Apply gravity for all */
-	while(o1->next) {
+	while (o1->next) {
 		struct object_list *o2 = objects;
-		while(o2->next) {
+		while (o2->next) {
 			res = do_gravity(o1, o2);
 
 			if (res)
@@ -305,7 +302,7 @@ static int do_movement_by_list(void)
 	if (!object)
 		return res;
 
-	while(object->next) {
+	while (object->next) {
 		res = do_movement(object->physic);
 		if (res)
 			return res;
@@ -337,55 +334,33 @@ static struct physic *mass_center(void)
 	center.pos.y /= center.weight;
 	center.pos.z /= center.weight;
 
-	cx = center.pos.x;
-	cy = center.pos.y;
-	cz = center.pos.z;
-
 	return &center;
 }
 
-static void *engine_thread(void *params)
+int do_space(struct object_list **list, struct physic **center)
 {
-	int res = 0;
+	int res;
 
-	/* 	COORDINATES	SPEED		SIZE WEIGHT	NAME COLOR */
-	add_sphere(0,0,0,	0,0,0,		50, 1000,	"Sun", RED);
-	add_sphere(-200,0,0,	0,-20,0,	20, 50,		"Mercury", BLUE);
-	add_sphere(0,880,100,	22,0,2,		10, 20,		"Lunar", YELLOW);
-	add_sphere(400,0,0,	0,14,0,		15, 40,		"Venus", PURPLE);
-	add_sphere(0,800,100,	10,0,-2,	30, 100,	"Earth", GREEN);
+	*list = objects;
 
-	while(is_active) {
-		usleep(fconst.D * 1000);
-
-		pthread_mutex_lock(&mutex);
-		res = do_gravity_by_list();
-		if (res) {
-			printf("Error do_gravity_by_list: %d\n", res);
-			is_active = false;
-		}
-
-		res = do_movement_by_list();
-		if (res) {
-			printf("Error do_movement_by_list: %d\n", res);
-			is_active = false;
-		}
-
-		mass_center();
-
-		pthread_mutex_unlock(&mutex);
+	if (!objects) {
+		/* 	COORDINATES	SPEED		SIZE WEIGHT	NAME COLOR */
+		add_sphere(0, 0, 0, 0, 0, 0, 50, 1000, "Sun", RED);
+		add_sphere(-200, 0, 0, 0, -20, 0, 20, 50, "Mercury", BLUE);
+		add_sphere(0, 880, 100, 22, 0, 2, 10, 20, "Lunar", YELLOW);
+		add_sphere(400, 0, 0, 0, 14, 0, 15, 40, "Venus", PURPLE);
+		add_sphere(0, 800, 100, 10, 0, -2, 30, 100, "Earth", GREEN);
 	}
-	pthread_exit(NULL);
-}
 
-pthread_t engine_start(pthread_mutex_t *ext_mutex)
-{
-	if (pthread_create(&thandle, NULL, &engine_thread, ext_mutex))
-		printf("Error creating thread!\n");
-	return thandle;
-}
+	res = do_gravity_by_list();
+	if (res)
+		return res;
 
-struct object_list *get_object_list(void)
-{
-	return objects;
+	res = do_movement_by_list();
+	if (res)
+		return res;
+
+	*center = mass_center();
+
+	return res;
 }
