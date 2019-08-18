@@ -5,7 +5,7 @@ struct {
 	 int width, height;
 	 uint fefresh_mills;
 	 struct physic *center;
-} settings = { .fefresh_mills = 10, };
+} settings = { .fefresh_mills = 30, };
 
 struct color_t {
 	uint8_t r,g,b;
@@ -147,6 +147,13 @@ static void process_keys(int key, int xx, int yy)
 			camera.x -= camera.lx * fraction;
 			camera.z -= camera.lz * fraction;
 			break;
+		case GLUT_KEY_F1 :
+			settings.fefresh_mills++;
+			break;
+		case GLUT_KEY_F2 :
+			if (settings.fefresh_mills > 3)
+				settings.fefresh_mills--;
+			break;
 	}
 }
  
@@ -155,7 +162,7 @@ int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);            // Initialize GLUT
 	glutInitDisplayMode(GLUT_DOUBLE); // Enable double buffered mode
-	glutInitWindowSize(1280, 960);   // Set the window's initial width & height
+	glutInitWindowSize(1000, 1000);   // Set the window's initial width & height
 	glutInitWindowPosition(500, 250); // Position the window's initial top-left corner
 	glutCreateWindow("Space");          // Create window with the given title
 	glutDisplayFunc(display);       // Register callback handler for window re-paint event
